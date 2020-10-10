@@ -1,0 +1,150 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+
+  <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+	<script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+
+  <script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js"></script>
+
+  <style>
+    body {padding: 0; margin: 0;} /* to avoid to show scroll bars*/
+    canvas {
+      height: 100vh;
+		  width: 100%;
+		  position: relative;
+		  left: 0;
+		  top: 0;
+      /* display: block; */
+      }  /* to avoid to show scroll bars*/
+  </style>
+</head>
+<body>
+  <!-- <div class="container-fluid">
+    <div class="col"> -->
+      <div id="p5canvas"></div>
+    <!-- </div>
+  </div> -->
+</body>
+
+<script language="javascript" type="text/javascript">
+
+var loopflag = true;
+
+function mouseClicked(){
+  if(loopflag == true){
+    noLoop();
+  }else{
+    loop();
+  }
+  loopflag = !loopflag;
+}
+
+var environment = [];
+var env_width = 4;
+var env_height = 4;
+var cell_size = 0;
+
+var agent1 = {x : 0,y : 0,}
+var q_table = [];
+var goal = {x : 0,y : 0,}
+
+function setup() {
+  for (var h = 0; h < env_height; h++) environment.push(new Array(env_width).fill(-1)) // initialize environment
+
+  // for (var i = 0; i < sqrt(env_width*env_height); i++) { // set obstacles
+  //   environment[floor(random(0,env_height))][floor(random(0,width))] = 1;
+  // }
+
+  agent1.x = floor(random(0,env_width));
+  agent1.y = floor(random(0,env_height));
+
+  goal.x = floor(random(0,env_width));
+  goal.y = floor(random(0,env_height));
+  environment[goal.y][goal.x] = 100;
+
+  // initialize q_table
+  for (var i = 0; i < env_height*env_width; i++) q_table.push(new Array(4).fill(0))
+  // --- detail of q_table ---
+  // 2 dimensional array. line direction for each state. columns direction for each action of agent
+  // (state number = index number) = (line)*env_width+(colums)
+  // i.e. imagine env_height = 4, env_width = 4
+  //   (x,y) = (0,3) => state number is 3
+  //   (x,y) = (2,1) => state number is 2 * 1 + 4 = 6
+
+  // --- p5 js initialize start ---
+  var can = createCanvas($("#p5canvas").width(), windowHeight);
+  can.parent("p5canvas");
+  // --- p5 js initialize end ---
+  colorMode(HSB, 100);
+  frameRate(32);
+
+  // for visulize
+  cell_size = min(width/env_width, height/env_height);
+}
+
+function draw() {
+  background(0);
+
+  for (var h = 0; h < env_height; h++) {
+    for (var w = 0; w < env_width; w++) {
+      stroke(0)
+      fill(map(environment[h][w],-10,100,0,255), 100, 100);
+      rect(cell_size*w, cell_size*h, cell_size, cell_size)
+    }
+  }
+
+  stroke(255);
+  fill(255);
+  rect(cell_size*agent1.x, cell_size*agent1.y, cell_size, cell_size)
+
+  // stroke(255);
+  // fill(0);
+  // rect(cell_size*goal.x, cell_size*goal.y, cell_size, cell_size)
+
+  for (var h = 0; h < q_table.length; h++) {
+    for (var w = 0; w < q_table[0].length; w++) {
+      stroke(255);
+      fill(255);
+      textAlign(LEFT, TOP)
+      textSize(height/q_table.length/4)
+      text(nfc(q_table[h][w], 1), cell_size*env_width+(width-cell_size*env_width)*w/q_table[0].length, height*h/q_table.length)
+    }
+  }
+}
+
+function keyPressed(){
+  var nextpos = {x: agent1.x, y: agent1.y};
+  var nextaction = floor(random(0,4));
+  switch (nextaction) {
+    case 0: if(nextpos.y!=env_height-1)nextpos.y += 1; break;
+    case 1: if(nextpos.y!=0)nextpos.y -= 1; break;
+    case 2: if(nextpos.x!=0)nextpos.x -= 1; break;
+    case 3: if(nextpos.x!=env_width-1)nextpos.x += 1; break;
+  }
+  var currentstate = agent1.y*env_width+agent1.x;
+  var nextstate = nextpos.y*env_width+nextpos.x;
+
+  var alpha = 0.7;
+  var gamma = 0.9;
+  var q_value = alpha*(environment[agent1.y][agent1.x]+max(q_table[nextstate]))
+  q_table[currentstate][nextaction] = q_value;
+
+  console.log("agent1", agent1)
+  console.log("currentstate", currentstate)
+  console.log("nextaction", nextaction)
+  console.log("nextpos", nextpos)
+  console.log("nextstate", nextstate)
+  console.log("q_value", q_value)
+
+  agent1.x = nextpos.x;
+  agent1.y = nextpos.y;
+}
+
+</script>
+
+</html>
