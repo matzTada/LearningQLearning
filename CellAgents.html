@@ -45,8 +45,8 @@ function mouseClicked(){
 }
 
 var environment = [];
-var env_width = 4;
-var env_height = 4;
+var env_width = 6;
+var env_height = 6;
 var cell_size = 0;
 
 var agent1 = {x : 0,y : 0,}
@@ -56,9 +56,9 @@ var goal = {x : 0,y : 0,}
 function setup() {
   for (var h = 0; h < env_height; h++) environment.push(new Array(env_width).fill(-1)) // initialize environment
 
-  // for (var i = 0; i < sqrt(env_width*env_height); i++) { // set obstacles
-  //   environment[floor(random(0,env_height))][floor(random(0,width))] = 1;
-  // }
+  for (var i = 0; i < env_width*env_height/10; i++) { // set obstacles
+    environment[floor(random(0,env_height))][floor(random(0,env_width))] = -100;
+  }
 
   agent1.x = floor(random(0,env_width));
   agent1.y = floor(random(0,env_height));
@@ -92,14 +92,36 @@ function draw() {
 
   for (var h = 0; h < env_height; h++) {
     for (var w = 0; w < env_width; w++) {
-      stroke(0)
-      fill(map(environment[h][w],-10,100,0,255), 100, 100);
+      stroke(0);
+      if(environment[h][w] == -100) {
+        fill(0, 50, 100)
+      }else if(environment[h][w] == 100) {
+        fill(33, 50, 100)
+      }else{
+        fill(66, 50, 100)
+      }
       rect(cell_size*w, cell_size*h, cell_size, cell_size)
+
+      fill(0);
+      textSize(height/q_table.length/2)
+      textAlign(CENTER, CENTER);
+      text(environment[h][w], cell_size*(w+0.5), cell_size*(h+0.5));
+
+      noStroke();
+      var circlesize = cell_size/4;
+      var state_q_value_max = max(q_table[getstate(h, w)]);
+      (q_table[getstate(h, w)][0] >= state_q_value_max)?fill(255):noFill();
+      ellipse(cell_size*(w+0.5), cell_size*h+circlesize/2, circlesize, circlesize);
+      (q_table[getstate(h, w)][1] >= state_q_value_max)?fill(255):noFill();
+      ellipse(cell_size*(w+0.5), cell_size*(h+1)-circlesize/2, circlesize, circlesize);
+      (q_table[getstate(h, w)][2] >= state_q_value_max)?fill(255):noFill();
+      ellipse(cell_size*w+circlesize/2, cell_size*(h+0.5), circlesize, circlesize);
+      (q_table[getstate(h, w)][3] >= state_q_value_max)?fill(255):noFill();
+      ellipse(cell_size*(w+1)-circlesize/2, cell_size*(h+0.5),circlesize, circlesize);
 
       noStroke();
       fill(0);
-      textSize(height/q_table.length/4)
-
+      textSize(height/q_table.length/2)
       textAlign(CENTER, TOP)
       text(nfc(q_table[getstate(h, w)][0], 1), cell_size*(w+0.5), cell_size*h);
       textAlign(CENTER, BOTTOM)
@@ -108,6 +130,7 @@ function draw() {
       text(nfc(q_table[getstate(h, w)][2], 1), cell_size*w, cell_size*(h+0.5));
       textAlign(RIGHT, CENTER)
       text(nfc(q_table[getstate(h, w)][3], 1), cell_size*(w+1), cell_size*(h+0.5));
+
     }
   }
 
@@ -129,9 +152,8 @@ function draw() {
       text(nfc(q_table[h][w], 1), cell_size*env_width+(width-cell_size*env_width)*w/q_table[0].length, height*h/q_table.length)
     }
   }
-}
 
-function keyPressed(){
+  // --- logic ---
   var nextpos = {x: agent1.x, y: agent1.y};
   var nextaction = floor(random(0,4));
   var movementflag = true;
@@ -147,6 +169,7 @@ function keyPressed(){
   var alpha = 0.7;
   var gamma = 0.9; // time discount
   var q_value = alpha*(environment[agent1.y][agent1.x]+gamma*max(q_table[nextstate]))
+    +(1-alpha)*environment[agent1.y][agent1.x];
   if(movementflag == false) q_value = 0;
   q_table[currentstate][nextaction] = q_value;
 
