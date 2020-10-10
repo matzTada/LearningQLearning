@@ -95,17 +95,31 @@ function draw() {
       stroke(0)
       fill(map(environment[h][w],-10,100,0,255), 100, 100);
       rect(cell_size*w, cell_size*h, cell_size, cell_size)
+
+      noStroke();
+      fill(0);
+      textSize(height/q_table.length/4)
+
+      textAlign(CENTER, TOP)
+      text(nfc(q_table[getstate(h, w)][0], 1), cell_size*(w+0.5), cell_size*h);
+      textAlign(CENTER, BOTTOM)
+      text(nfc(q_table[getstate(h, w)][1], 1), cell_size*(w+0.5), cell_size*(h+1));
+      textAlign(LEFT, CENTER)
+      text(nfc(q_table[getstate(h, w)][2], 1), cell_size*w, cell_size*(h+0.5));
+      textAlign(RIGHT, CENTER)
+      text(nfc(q_table[getstate(h, w)][3], 1), cell_size*(w+1), cell_size*(h+0.5));
     }
   }
 
   stroke(255);
   fill(255);
-  rect(cell_size*agent1.x, cell_size*agent1.y, cell_size, cell_size)
+  ellipse(cell_size*(agent1.x+0.5), cell_size*(agent1.y+0.5), cell_size/2, cell_size/2)
 
   // stroke(255);
   // fill(0);
   // rect(cell_size*goal.x, cell_size*goal.y, cell_size, cell_size)
 
+  // visualize q_table
   for (var h = 0; h < q_table.length; h++) {
     for (var w = 0; w < q_table[0].length; w++) {
       stroke(255);
@@ -120,18 +134,20 @@ function draw() {
 function keyPressed(){
   var nextpos = {x: agent1.x, y: agent1.y};
   var nextaction = floor(random(0,4));
+  var movementflag = true;
   switch (nextaction) {
-    case 0: if(nextpos.y!=env_height-1)nextpos.y += 1; break;
-    case 1: if(nextpos.y!=0)nextpos.y -= 1; break;
-    case 2: if(nextpos.x!=0)nextpos.x -= 1; break;
-    case 3: if(nextpos.x!=env_width-1)nextpos.x += 1; break;
+    case 0: (nextpos.y!=0)?nextpos.y -= 1:movementflag=false; break;
+    case 1: (nextpos.y!=env_height-1)?nextpos.y += 1:movementflag=false; break;
+    case 2: (nextpos.x!=0)?nextpos.x -= 1:movementflag=false; break;
+    case 3: (nextpos.x!=env_width-1)?nextpos.x += 1:movementflag=false; break;
   }
-  var currentstate = agent1.y*env_width+agent1.x;
-  var nextstate = nextpos.y*env_width+nextpos.x;
+  var currentstate = getstate(agent1.y, agent1.x);
+  var nextstate = getstate(nextpos.y, nextpos.x);
 
   var alpha = 0.7;
-  var gamma = 0.9;
-  var q_value = alpha*(environment[agent1.y][agent1.x]+max(q_table[nextstate]))
+  var gamma = 0.9; // time discount
+  var q_value = alpha*(environment[agent1.y][agent1.x]+gamma*max(q_table[nextstate]))
+  if(movementflag == false) q_value = 0;
   q_table[currentstate][nextaction] = q_value;
 
   console.log("agent1", agent1)
@@ -143,6 +159,10 @@ function keyPressed(){
 
   agent1.x = nextpos.x;
   agent1.y = nextpos.y;
+}
+
+function getstate(_y, _x){
+  return _y*env_width+_x;
 }
 
 </script>
