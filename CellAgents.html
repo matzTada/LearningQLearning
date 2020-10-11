@@ -48,24 +48,33 @@ var environment = [];
 var env_width = 8;
 var env_height = 8;
 var cell_size = 0;
+var goals = [];
 
-var agent1 = {x : 0,y : 0,}
+var agents = [];
 var q_table = [];
-var goal = {x : 0,y : 0,}
 
 function setup() {
-  for (var h = 0; h < env_height; h++) environment.push(new Array(env_width).fill(-1)) // initialize environment
-
-  for (var i = 0; i < env_width*env_height/10; i++) { // set obstacles
-    environment[floor(random(0,env_height))][floor(random(0,env_width))] = -100;
+  // initialize environment
+  for (var h = 0; h < env_height; h++) environment.push(new Array(env_width).fill(-1))
+  // set obstacles
+  for (var i = 0; i < env_width*env_height/10; i++) environment[floor(random(0,env_height))][floor(random(0,env_width))] = -100;
+  // set goals
+  for (var i = 0; i < 2; i++) {
+    var tmp = {
+      x : floor(random(0,env_width)),
+      y : floor(random(0,env_height)),
+    }
+    goals.push(tmp);
+    environment[tmp.y][tmp.x] = 100;
   }
 
-  agent1.x = floor(random(0,env_width));
-  agent1.y = floor(random(0,env_height));
-
-  goal.x = floor(random(0,env_width));
-  goal.y = floor(random(0,env_height));
-  environment[goal.y][goal.x] = 100;
+  // set agents
+  for (var i = 0; i < 5; i++) {
+    agents.push({
+      x : floor(random(0,env_width)),
+      y : floor(random(0,env_height)),
+    });
+  }
 
   // initialize q_table
   for (var i = 0; i < env_height*env_width; i++) q_table.push(new Array(4).fill(0))
@@ -102,14 +111,9 @@ function draw() {
       }
       rect(cell_size*w, cell_size*h, cell_size, cell_size)
 
-      fill(0);
-      textSize(height/q_table.length/2)
-      textAlign(CENTER, CENTER);
-      text(environment[h][w], cell_size*(w+0.5), cell_size*(h+0.5));
-
       noStroke();
       fill(255);
-      var circlesize = cell_size/3;
+      var circlesize = cell_size/4;
       var state_q_value_max = max(q_table[getstate(h, w)]);
       var state_q_value_min = min(q_table[getstate(h, w)]);
       (q_table[getstate(h, w)][0] >= state_q_value_max) ? fill(255) : noFill();
@@ -133,16 +137,20 @@ function draw() {
       textAlign(RIGHT, CENTER)
       text(nfc(q_table[getstate(h, w)][3], 1), cell_size*(w+1), cell_size*(h+0.5));
 
+      fill(0);
+      textSize(height/q_table.length/2)
+      textAlign(CENTER, CENTER);
+      text(environment[h][w], cell_size*(w+0.5), cell_size*(h+0.5));
+
     }
   }
 
+  // visualize agents
   stroke(255);
-  fill(255);
-  ellipse(cell_size*(agent1.x+0.5), cell_size*(agent1.y+0.5), cell_size/2, cell_size/2)
-
-  // stroke(255);
-  // fill(0);
-  // rect(cell_size*goal.x, cell_size*goal.y, cell_size, cell_size)
+  fill(15, 50, 100);
+  for (var i = 0; i < agents.length; i++) {
+    ellipse(cell_size*(agents[i].x+0.5), cell_size*(agents[i].y+0.5), cell_size/2, cell_size/2)
+  }
 
   // visualize q_table
   for (var h = 0; h < q_table.length; h++) {
@@ -156,34 +164,38 @@ function draw() {
   }
 
   // --- logic ---
-  var nextpos = {x: agent1.x, y: agent1.y};
-  var nextaction = floor(random(0,4));
-  var movementflag = true;
-  switch (nextaction) {
-    case 0: (nextpos.y!=0)?nextpos.y -= 1:movementflag=false; break;
-    case 1: (nextpos.y!=env_height-1)?nextpos.y += 1:movementflag=false; break;
-    case 2: (nextpos.x!=0)?nextpos.x -= 1:movementflag=false; break;
-    case 3: (nextpos.x!=env_width-1)?nextpos.x += 1:movementflag=false; break;
+  for (var i = 0; i < agents.length; i++) {
+    var nextpos = {x: agents[i].x, y: agents[i].y};
+    var nextaction = floor(random(0,4));
+    var movementflag = true;
+    switch (nextaction) {
+      case 0: (nextpos.y!=0)?nextpos.y -= 1:movementflag=false; break;
+      case 1: (nextpos.y!=env_height-1)?nextpos.y += 1:movementflag=false; break;
+      case 2: (nextpos.x!=0)?nextpos.x -= 1:movementflag=false; break;
+      case 3: (nextpos.x!=env_width-1)?nextpos.x += 1:movementflag=false; break;
+    }
+    var currentstate = getstate(agents[i].y, agents[i].x);
+    var nextstate = getstate(nextpos.y, nextpos.x);
+
+    var alpha = 0.7;
+    var gamma = 0.9; // time discount
+    var q_value = alpha*(environment[agents[i].y][agents[i].x]+gamma*max(q_table[nextstate]))
+      +(1-alpha)*environment[agents[i].y][agents[i].x];
+    if(movementflag == false) q_value = -100;
+    q_table[currentstate][nextaction] = q_value;
+
+    // console.log("agents[i]", agents[i])
+    // console.log("currentstate", currentstate)
+    // console.log("nextaction", nextaction)
+    // console.log("nextpos", nextpos)
+    // console.log("nextstate", nextstate)
+    // console.log("q_value", q_value)
+
+    agents[i].x = nextpos.x;
+    agents[i].y = nextpos.y;
   }
-  var currentstate = getstate(agent1.y, agent1.x);
-  var nextstate = getstate(nextpos.y, nextpos.x);
 
-  var alpha = 0.7;
-  var gamma = 0.9; // time discount
-  var q_value = alpha*(environment[agent1.y][agent1.x]+gamma*max(q_table[nextstate]))
-    +(1-alpha)*environment[agent1.y][agent1.x];
-  if(movementflag == false) q_value = -100;
-  q_table[currentstate][nextaction] = q_value;
-
-  // console.log("agent1", agent1)
-  // console.log("currentstate", currentstate)
-  // console.log("nextaction", nextaction)
-  // console.log("nextpos", nextpos)
-  // console.log("nextstate", nextstate)
-  // console.log("q_value", q_value)
-
-  agent1.x = nextpos.x;
-  agent1.y = nextpos.y;
+  // visualize simulation environment info
 
   noStroke();
   fill(255);
