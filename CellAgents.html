@@ -35,7 +35,7 @@
 
 var loopflag = true;
 
-function mouseClicked(){
+function keyPressed(){
   if(loopflag == true){
     noLoop();
   }else{
@@ -45,21 +45,23 @@ function mouseClicked(){
 }
 
 var environment = [];
-var env_width = 8;
-var env_height = 8;
+var env_width = 10;
+var env_height = 10;
 var cell_size = 0;
 var goals = [];
 
 var agents = [];
 var q_table = [];
 
+var update_diff_total_history = [];
+
 function setup() {
   // initialize environment
   for (var h = 0; h < env_height; h++) environment.push(new Array(env_width).fill(-1))
   // set obstacles
-  for (var i = 0; i < env_width*env_height/10; i++) environment[floor(random(0,env_height))][floor(random(0,env_width))] = -100;
+  for (var i = 0; i < env_width*env_height/10; i++) environment[floor(random(0,env_height))][floor(random(0,env_width))] = -1000;
   // set goals
-  for (var i = 0; i < 1; i++) {
+  for (var i = 0; i < sqrt(env_width*env_height)/2; i++) {
     var tmp = {
       x : floor(random(0,env_width)),
       y : floor(random(0,env_height)),
@@ -69,7 +71,7 @@ function setup() {
   }
 
   // set agents
-  for (var i = 0; i < 5; i++) {
+  for (var i = 0; i < env_width*env_height/10; i++) {
     agents.push({
       x : floor(random(0,env_width)),
       y : floor(random(0,env_height)),
@@ -102,7 +104,7 @@ function draw() {
   for (var h = 0; h < env_height; h++) {
     for (var w = 0; w < env_width; w++) {
       stroke(0);
-      if(environment[h][w] == -100) {
+      if(environment[h][w] == -1000) {
         fill(0, 50, 100)
       }else if(environment[h][w] == 100) {
         fill(33, 50, 100)
@@ -171,18 +173,10 @@ function draw() {
     ellipse(cell_size*(agents[i].x+0.5), cell_size*(agents[i].y+0.5), cell_size/2, cell_size/2)
   }
 
-  // visualize q_table
-  for (var h = 0; h < q_table.length; h++) {
-    for (var w = 0; w < q_table[0].length; w++) {
-      stroke(255);
-      fill(255);
-      textAlign(LEFT, TOP)
-      textSize(height/q_table.length/4)
-      text(nfc(q_table[h][w], 1), cell_size*env_width+(width-cell_size*env_width)*w/q_table[0].length, height*h/q_table.length)
-    }
-  }
-
   // --- logic ---
+
+  var update_diff_total = 0;
+
   for (var i = 0; i < agents.length; i++) {
     var nextpos = {x: agents[i].x, y: agents[i].y};
     var nextaction = floor(random(0,4));
@@ -198,10 +192,14 @@ function draw() {
 
     var alpha = 0.7;
     var gamma = 0.9; // time discount
-    var q_value = alpha*(environment[agents[i].y][agents[i].x]+gamma*max(q_table[nextstate]))
-      +(1-alpha)*environment[agents[i].y][agents[i].x];
-    if(movementflag == false) q_value = -100;
-    q_table[currentstate][nextaction] = q_value;
+    var current_q_value = q_table[currentstate][nextaction];
+    var next_q_value =
+        alpha*(
+          environment[agents[i].y][agents[i].x]
+          +gamma*max(q_table[nextstate])
+        )
+        +(1-alpha)*current_q_value;
+    if(movementflag == false) next_q_value = -1000;
 
     // console.log("agents[i]", agents[i])
     // console.log("currentstate", currentstate)
@@ -210,17 +208,48 @@ function draw() {
     // console.log("nextstate", nextstate)
     // console.log("q_value", q_value)
 
+    update_diff_total += abs(current_q_value - next_q_value);
+
+    // update data
+    q_table[currentstate][nextaction] = next_q_value;
     agents[i].x = nextpos.x;
     agents[i].y = nextpos.y;
   }
 
-  // visualize simulation environment info
+  // visualize q_table
+  for (var h = 0; h < q_table.length; h++) {
+    for (var w = 0; w < q_table[0].length; w++) {
+      stroke(255);
+      fill(255);
+      textAlign(LEFT, TOP)
+      textSize(height/q_table.length/4)
+      text(nfc(q_table[h][w], 1), cell_size*env_width+(width-cell_size*env_width)*w/q_table[0].length, height*h/q_table.length)
+    }
+  }
 
+  update_diff_total_history.push(update_diff_total)
+  if(update_diff_total_history.length > 1000) update_diff_total_history.shift(); // remove first value of array
+
+  stroke(50, 100, 100);
+  noFill();
+  for (var i = 0; i < update_diff_total_history.length-1; i++) {
+    line(
+      cell_size*env_width+map(i, 0, update_diff_total_history.length, 0, width-cell_size*env_width),
+      height-update_diff_total_history[i],
+      cell_size*env_width+map(i+1, 0, update_diff_total_history.length, 0, width-cell_size*env_width),
+      height-update_diff_total_history[i+1]
+    );
+  }
+
+  // visualize simulation environment info
   noStroke();
   fill(255);
   textAlign(RIGHT, BOTTOM)
   textSize(height/40);
-  text("frameRate():" + nfc(frameRate(),1), width, height);
+  text(
+    "update_diff_total:" + nfc(update_diff_total, 1) + "\n"
+    + "frameRate():" + nfc(frameRate(),1) + " frameCount:" + frameCount
+    , width, height);
 }
 
 function getstate(_y, _x){
