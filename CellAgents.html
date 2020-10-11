@@ -45,8 +45,8 @@ function mouseClicked(){
 }
 
 var environment = [];
-var env_width = 6;
-var env_height = 6;
+var env_width = 8;
+var env_height = 8;
 var cell_size = 0;
 
 var agent1 = {x : 0,y : 0,}
@@ -108,16 +108,18 @@ function draw() {
       text(environment[h][w], cell_size*(w+0.5), cell_size*(h+0.5));
 
       noStroke();
-      var circlesize = cell_size/4;
+      fill(255);
+      var circlesize = cell_size/3;
       var state_q_value_max = max(q_table[getstate(h, w)]);
-      (q_table[getstate(h, w)][0] >= state_q_value_max)?fill(255):noFill();
-      ellipse(cell_size*(w+0.5), cell_size*h+circlesize/2, circlesize, circlesize);
-      (q_table[getstate(h, w)][1] >= state_q_value_max)?fill(255):noFill();
-      ellipse(cell_size*(w+0.5), cell_size*(h+1)-circlesize/2, circlesize, circlesize);
-      (q_table[getstate(h, w)][2] >= state_q_value_max)?fill(255):noFill();
-      ellipse(cell_size*w+circlesize/2, cell_size*(h+0.5), circlesize, circlesize);
-      (q_table[getstate(h, w)][3] >= state_q_value_max)?fill(255):noFill();
-      ellipse(cell_size*(w+1)-circlesize/2, cell_size*(h+0.5),circlesize, circlesize);
+      var state_q_value_min = min(q_table[getstate(h, w)]);
+      (q_table[getstate(h, w)][0] >= state_q_value_max) ? fill(255) : noFill();
+      triangle_directed(cell_size*(w+0.5), cell_size*h, circlesize, HALF_PI);
+      (q_table[getstate(h, w)][1] >= state_q_value_max) ? fill(255) : noFill();
+      triangle_directed(cell_size*(w+0.5), cell_size*(h+1), circlesize, -HALF_PI);
+      (q_table[getstate(h, w)][2] >= state_q_value_max) ? fill(255) : noFill();
+      triangle_directed(cell_size*w, cell_size*(h+0.5), circlesize, 0);
+      (q_table[getstate(h, w)][3] >= state_q_value_max) ? fill(255) : noFill();
+      triangle_directed(cell_size*(w+1), cell_size*(h+0.5), circlesize, PI);
 
       noStroke();
       fill(0);
@@ -170,22 +172,36 @@ function draw() {
   var gamma = 0.9; // time discount
   var q_value = alpha*(environment[agent1.y][agent1.x]+gamma*max(q_table[nextstate]))
     +(1-alpha)*environment[agent1.y][agent1.x];
-  if(movementflag == false) q_value = 0;
+  if(movementflag == false) q_value = -100;
   q_table[currentstate][nextaction] = q_value;
 
-  console.log("agent1", agent1)
-  console.log("currentstate", currentstate)
-  console.log("nextaction", nextaction)
-  console.log("nextpos", nextpos)
-  console.log("nextstate", nextstate)
-  console.log("q_value", q_value)
+  // console.log("agent1", agent1)
+  // console.log("currentstate", currentstate)
+  // console.log("nextaction", nextaction)
+  // console.log("nextpos", nextpos)
+  // console.log("nextstate", nextstate)
+  // console.log("q_value", q_value)
 
   agent1.x = nextpos.x;
   agent1.y = nextpos.y;
+
+  noStroke();
+  fill(255);
+  textAlign(RIGHT, BOTTOM)
+  textSize(height/40);
+  text("frameRate():" + nfc(frameRate(),1), width, height);
 }
 
 function getstate(_y, _x){
   return _y*env_width+_x;
+}
+
+function triangle_directed(_x, _y, _height, _angle){
+  push();
+  translate(_x, _y);
+  rotate(-HALF_PI/2+_angle);
+  triangle(0, 0, _height*sqrt(2), 0, 0, _height*sqrt(2));
+  pop();
 }
 
 </script>
