@@ -59,7 +59,7 @@ function setup() {
   // set obstacles
   for (var i = 0; i < env_width*env_height/10; i++) environment[floor(random(0,env_height))][floor(random(0,env_width))] = -100;
   // set goals
-  for (var i = 0; i < 2; i++) {
+  for (var i = 0; i < 1; i++) {
     var tmp = {
       x : floor(random(0,env_width)),
       y : floor(random(0,env_height)),
@@ -115,7 +115,6 @@ function draw() {
       fill(255);
       var circlesize = cell_size/4;
       var state_q_value_max = max(q_table[getstate(h, w)]);
-      var state_q_value_min = min(q_table[getstate(h, w)]);
       (q_table[getstate(h, w)][0] >= state_q_value_max) ? fill(255) : noFill();
       triangle_directed(cell_size*(w+0.5), cell_size*h, circlesize, HALF_PI);
       (q_table[getstate(h, w)][1] >= state_q_value_max) ? fill(255) : noFill();
@@ -137,6 +136,7 @@ function draw() {
       textAlign(RIGHT, CENTER)
       text(nfc(q_table[getstate(h, w)][3], 1), cell_size*(w+1), cell_size*(h+0.5));
 
+      noStroke();
       fill(0);
       textSize(height/q_table.length/2)
       textAlign(CENTER, CENTER);
@@ -144,6 +144,25 @@ function draw() {
 
     }
   }
+
+  // line visualize
+  for (var h = 0; h < env_height; h++) {
+    for (var w = 0; w < env_width; w++) {
+      stroke(255);
+      noFill();
+      var circlesize = cell_size/4;
+      var state_q_value_max = max(q_table[getstate(h, w)]);
+      (q_table[getstate(h, w)][0] >= state_q_value_max) ? stroke(255) : noStroke();
+      line(cell_size*(w+0.5), cell_size*(h-0.5), cell_size*(w+0.5), cell_size*(h+0.5));
+      (q_table[getstate(h, w)][1] >= state_q_value_max) ? stroke(255) : noStroke();
+      line(cell_size*(w+0.5), cell_size*(h+0.5), cell_size*(w+0.5), cell_size*(h+1.5));
+      (q_table[getstate(h, w)][2] >= state_q_value_max) ? stroke(255) : noStroke();
+      line(cell_size*(w-0.5), cell_size*(h+0.5), cell_size*(w+0.5), cell_size*(h+0.5));
+      (q_table[getstate(h, w)][3] >= state_q_value_max) ? stroke(255) : noStroke();
+      line(cell_size*(w+0.5), cell_size*(h+0.5), cell_size*(w+1.5), cell_size*(h+0.5));
+    }
+  }
+
 
   // visualize agents
   stroke(255);
