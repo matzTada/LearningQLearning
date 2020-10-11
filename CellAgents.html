@@ -36,24 +36,50 @@
 var loopflag = true;
 
 function keyPressed(){
-  if(loopflag == true){
-    noLoop();
-  }else{
-    loop();
+  switch (key) {
+    case " ":
+      if(loopflag == true){
+        noLoop();
+      }else{
+        loop();
+      }
+      loopflag = !loopflag;
+      break;
   }
-  loopflag = !loopflag;
+}
+
+function mouseClicked(){
+  var tmpx = floor(mouseX/cell_size);
+  var tmpy = floor(mouseY/cell_size);
+
+  if(0 <= tmpx && tmpx < env_width && 0 <= tmpy && tmpy < env_height){
+    switch (environment[tmpy][tmpx]) {
+      case -1000:
+        environment[tmpy][tmpx] = -1;
+        break;
+      case -1:
+        environment[tmpy][tmpx] = 100;
+        break;
+      case 100:
+        environment[tmpy][tmpx] = -1000;
+        break;
+      default:
+        environment[tmpy][tmpx] = -1;
+        break;
+    }
+  }
 }
 
 var environment = [];
-var env_width = 10;
-var env_height = 10;
+var env_width = 16;
+var env_height = 12;
 var cell_size = 0;
 var goals = [];
 
 var agents = [];
 var q_table = [];
 
-var update_diff_total_history = [];
+var update_q_temp_diff_total_history = [];
 
 function setup() {
   // initialize environment
@@ -109,34 +135,9 @@ function draw() {
       }else if(environment[h][w] == 100) {
         fill(33, 50, 100)
       }else{
-        fill(66, 50, 100)
+        fill(60, 50, 100)
       }
       rect(cell_size*w, cell_size*h, cell_size, cell_size)
-
-      noStroke();
-      fill(255);
-      var circlesize = cell_size/4;
-      var state_q_value_max = max(q_table[getstate(h, w)]);
-      (q_table[getstate(h, w)][0] >= state_q_value_max) ? fill(255) : noFill();
-      triangle_directed(cell_size*(w+0.5), cell_size*h, circlesize, HALF_PI);
-      (q_table[getstate(h, w)][1] >= state_q_value_max) ? fill(255) : noFill();
-      triangle_directed(cell_size*(w+0.5), cell_size*(h+1), circlesize, -HALF_PI);
-      (q_table[getstate(h, w)][2] >= state_q_value_max) ? fill(255) : noFill();
-      triangle_directed(cell_size*w, cell_size*(h+0.5), circlesize, 0);
-      (q_table[getstate(h, w)][3] >= state_q_value_max) ? fill(255) : noFill();
-      triangle_directed(cell_size*(w+1), cell_size*(h+0.5), circlesize, PI);
-
-      noStroke();
-      fill(0);
-      textSize(height/q_table.length/2)
-      textAlign(CENTER, TOP)
-      text(nfc(q_table[getstate(h, w)][0], 1), cell_size*(w+0.5), cell_size*h);
-      textAlign(CENTER, BOTTOM)
-      text(nfc(q_table[getstate(h, w)][1], 1), cell_size*(w+0.5), cell_size*(h+1));
-      textAlign(LEFT, CENTER)
-      text(nfc(q_table[getstate(h, w)][2], 1), cell_size*w, cell_size*(h+0.5));
-      textAlign(RIGHT, CENTER)
-      text(nfc(q_table[getstate(h, w)][3], 1), cell_size*(w+1), cell_size*(h+0.5));
 
       noStroke();
       fill(0);
@@ -147,24 +148,62 @@ function draw() {
     }
   }
 
-  // line visualize
+  // q_table value triangle visualizse
+  noStroke();
+  fill(255);
   for (var h = 0; h < env_height; h++) {
     for (var w = 0; w < env_width; w++) {
-      stroke(255);
-      noFill();
-      var circlesize = cell_size/4;
-      var state_q_value_max = max(q_table[getstate(h, w)]);
-      (q_table[getstate(h, w)][0] >= state_q_value_max) ? stroke(255) : noStroke();
-      line(cell_size*(w+0.5), cell_size*(h-0.5), cell_size*(w+0.5), cell_size*(h+0.5));
-      (q_table[getstate(h, w)][1] >= state_q_value_max) ? stroke(255) : noStroke();
-      line(cell_size*(w+0.5), cell_size*(h+0.5), cell_size*(w+0.5), cell_size*(h+1.5));
-      (q_table[getstate(h, w)][2] >= state_q_value_max) ? stroke(255) : noStroke();
-      line(cell_size*(w-0.5), cell_size*(h+0.5), cell_size*(w+0.5), cell_size*(h+0.5));
-      (q_table[getstate(h, w)][3] >= state_q_value_max) ? stroke(255) : noStroke();
-      line(cell_size*(w+0.5), cell_size*(h+0.5), cell_size*(w+1.5), cell_size*(h+0.5));
+      if(environment[h][w] == -1){
+        var tri_size = cell_size/4;
+        var state_q_value_max = max(q_table[getstate(h, w)]);
+        (q_table[getstate(h, w)][0] >= state_q_value_max) ? fill(255) : noFill();
+        triangle_directed(cell_size*(w+0.5), cell_size*h, tri_size, HALF_PI);
+        (q_table[getstate(h, w)][1] >= state_q_value_max) ? fill(255) : noFill();
+        triangle_directed(cell_size*(w+0.5), cell_size*(h+1), tri_size, -HALF_PI);
+        (q_table[getstate(h, w)][2] >= state_q_value_max) ? fill(255) : noFill();
+        triangle_directed(cell_size*w, cell_size*(h+0.5), tri_size, 0);
+        (q_table[getstate(h, w)][3] >= state_q_value_max) ? fill(255) : noFill();
+        triangle_directed(cell_size*(w+1), cell_size*(h+0.5), tri_size, PI);
+      }
     }
   }
 
+  // q_table value line visualize
+  stroke(255);
+  noFill();
+  for (var h = 0; h < env_height; h++) {
+    for (var w = 0; w < env_width; w++) {
+      if(environment[h][w] == -1){
+        var circlesize = cell_size/4;
+        var state_q_value_max = max(q_table[getstate(h, w)]);
+        (q_table[getstate(h, w)][0] >= state_q_value_max) ? stroke(255) : noStroke();
+        line(cell_size*(w+0.5), cell_size*(h-0.5), cell_size*(w+0.5), cell_size*(h+0.5));
+        (q_table[getstate(h, w)][1] >= state_q_value_max) ? stroke(255) : noStroke();
+        line(cell_size*(w+0.5), cell_size*(h+0.5), cell_size*(w+0.5), cell_size*(h+1.5));
+        (q_table[getstate(h, w)][2] >= state_q_value_max) ? stroke(255) : noStroke();
+        line(cell_size*(w-0.5), cell_size*(h+0.5), cell_size*(w+0.5), cell_size*(h+0.5));
+        (q_table[getstate(h, w)][3] >= state_q_value_max) ? stroke(255) : noStroke();
+        line(cell_size*(w+0.5), cell_size*(h+0.5), cell_size*(w+1.5), cell_size*(h+0.5));
+      }
+    }
+  }
+
+  // q_table value text  visualizse
+  noStroke();
+  fill(0);
+  for (var h = 0; h < env_height; h++) {
+    for (var w = 0; w < env_width; w++) {
+      textSize(height/q_table.length/2)
+      textAlign(CENTER, TOP)
+      text(nfc(q_table[getstate(h, w)][0], 1), cell_size*(w+0.5), cell_size*h);
+      textAlign(CENTER, BOTTOM)
+      text(nfc(q_table[getstate(h, w)][1], 1), cell_size*(w+0.5), cell_size*(h+1));
+      textAlign(LEFT, CENTER)
+      text(nfc(q_table[getstate(h, w)][2], 1), cell_size*w, cell_size*(h+0.5));
+      textAlign(RIGHT, CENTER)
+      text(nfc(q_table[getstate(h, w)][3], 1), cell_size*(w+1), cell_size*(h+0.5));
+    }
+  }
 
   // visualize agents
   stroke(255);
@@ -175,7 +214,7 @@ function draw() {
 
   // --- logic ---
 
-  var update_diff_total = 0;
+  var update_q_temp_diff_total = 0;
 
   for (var i = 0; i < agents.length; i++) {
     var nextpos = {x: agents[i].x, y: agents[i].y};
@@ -208,7 +247,7 @@ function draw() {
     // console.log("nextstate", nextstate)
     // console.log("q_value", q_value)
 
-    update_diff_total += abs(current_q_value - next_q_value);
+    update_q_temp_diff_total += abs(current_q_value - next_q_value);
 
     // update data
     q_table[currentstate][nextaction] = next_q_value;
@@ -227,29 +266,54 @@ function draw() {
     }
   }
 
-  update_diff_total_history.push(update_diff_total)
-  if(update_diff_total_history.length > 1000) update_diff_total_history.shift(); // remove first value of array
+  // visualize q_value's temporal difference
+  update_q_temp_diff_total_history.push(update_q_temp_diff_total)
+  if(update_q_temp_diff_total_history.length > 2000) update_q_temp_diff_total_history.shift(); // remove first value of array
 
   stroke(50, 100, 100);
   noFill();
-  for (var i = 0; i < update_diff_total_history.length-1; i++) {
-    line(
-      cell_size*env_width+map(i, 0, update_diff_total_history.length, 0, width-cell_size*env_width),
-      height-update_diff_total_history[i],
-      cell_size*env_width+map(i+1, 0, update_diff_total_history.length, 0, width-cell_size*env_width),
-      height-update_diff_total_history[i+1]
-    );
+  for (var i = 0; i < update_q_temp_diff_total_history.length-1; i++) {
+    if(i<1000){
+      line(
+        cell_size*env_width+map(i, 0, 1000, 0, width-cell_size*env_width),
+        height/2-update_q_temp_diff_total_history[i],
+        cell_size*env_width+map(i+1, 0, 1000, 0, width-cell_size*env_width),
+        height/2-update_q_temp_diff_total_history[i+1]
+      );
+    }else{
+      line(
+        cell_size*env_width+map(i, 1000, 2000, 0, width-cell_size*env_width),
+        height-update_q_temp_diff_total_history[i],
+        cell_size*env_width+map(i+1, 1000, 2000, 0, width-cell_size*env_width),
+        height-update_q_temp_diff_total_history[i+1]
+      );
+    }
   }
+
+  noStroke();
+  fill(50, 100, 100);
+  textAlign(RIGHT, TOP)
+  textSize(height/40);
+  text("update_q_temp_diff_total:" + nfc(update_q_temp_diff_total, 1), width, height/2);
 
   // visualize simulation environment info
   noStroke();
-  fill(255);
-  textAlign(RIGHT, BOTTOM)
+  fill(100);
+  textAlign(RIGHT, TOP)
   textSize(height/40);
-  text(
-    "update_diff_total:" + nfc(update_diff_total, 1) + "\n"
-    + "frameRate():" + nfc(frameRate(),1) + " frameCount:" + frameCount
-    , width, height);
+  text("Learning of  Q-Learning\n"
+    + "frameRate():" + nfc(frameRate(),1) + "\n"
+    + "frameCount:" + frameCount + "\n"
+    , width, 0);
+
+    // visualize simulation environment info
+    noStroke();
+    fill(10, 100, 100);
+    textAlign(RIGHT, BOTTOM)
+    textSize(height/80);
+    text("How To Do with JugglerHoney"
+      , width, height);
+
 }
 
 function getstate(_y, _x){
